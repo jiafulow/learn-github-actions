@@ -1,0 +1,46 @@
+name: learn-github-actions
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    name: Build wheel on ubuntu-latest
+    runs-on: ubuntu-latest
+    env:
+      CIBW_SKIP: 'pp* cp36-* cp37-* cp38-*'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout other repository
+        uses: actions/checkout@v4
+        with:
+          repository: jiafulow/laszip-python
+          ref: fix-compression-stream-mode
+          path: laszip
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "cibuildwheel==2.21" setuptools wheel "scikit-build-core>=0.9" "pybind11>=2.10"
+
+      - name: Build the wheel
+        run: |
+          cd laszip
+          python -m cibuildwheel --output-dir dist --platform linux --archs x86_64
+      
+      - name: Upload the wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: built_wheel
+          path: laszip/dist/*.whl
